@@ -1,0 +1,60 @@
+#!/bin/sh
+#
+# Start XBMC and take appropriate action on exit (restart XBMC, shutdown system etc.)
+
+# Set these variables unless they are already set in the environment
+: ${XBMC_TTY_TIMEOUT:="5"}
+: ${XBMC_USER:="pi"}
+: ${XBMC_VT:="3"}
+
+XBMC="/usr/lib/xbmc/xbmc.bin"
+XBMC_CMD="$XBMC --standalone -fs"
+VT_HELPER="/usr/lib/xbmc/vt-helper"
+
+MEM_TOTAL=$(awk '/^MemTotal:/{ print $2; }' </proc/meminfo)
+
+if [ "$MEM_TOTAL" -gt "131072" ]; then
+	echo "128Mb GPU split not selected, XBMC will not start (found $MEM_TOTAL bytes RAM)."
+	kill -STOP $$
+fi
+
+while true; do
+    chvt $XBMC_VT
+    clear >/dev/tty$XBMC_VT
+    setcap cap_net_admin,cap_net_bind_service,cap_net_raw=ep $XBMC
+    su - $XBMC_USER -c "$XBMC_CMD >/dev/null 2>&1"
+    case "$?" in
+        0) # user quit. Wait for $XBMC_TTY_TIMEOUT grace period so user can login into console tty
+            $VT_HELPER $XBMC_TTY_TIMEOUT
+            case "$?" in
+                8) # user pressed escape. now switching to 1st terminal
+                    chvt 1
+                    sleep 55
+		    # loop while user is logged in on at least one virtual terminal
+                    while true; do
+                        login_check=$(who | awk '{print $2}' | grep ^tty[0-9])
+                        if [ -z "$login_check" ]; then
+                            break
+                        fi
+                        sleep 5
+                    done ;;
+                9|*) # no user input. resume xbmc
+                    sleep 2;;
+            esac
+            ;; 
+        64) # shutdown system.
+            /sbin/poweroff
+	    exit
+	    ;;
+        65) # warm Restart xbmc
+            sleep 2
+	    ;;
+        66) # Reboot System
+            /sbin/reboot
+	    exit
+	    ;;
+        *)  # this should not happen
+            sleep 30
+	    ;;
+    esac
+done

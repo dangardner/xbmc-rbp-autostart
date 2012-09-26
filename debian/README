@@ -1,0 +1,8 @@
+The Debian Package xbmc-rbp-autostart
+----------------------------
+
+This package provides an init script and some associated helpers to ensure
+XMBC is run on startup and still allow the user to log in on a virtual terminal
+if required.
+
+ -- Dan Gardner <dan+rpi@chaotica.org.uk>  Tue, 25 Sep 2012 23:47:56 +0100

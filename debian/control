@@ -1,0 +1,17 @@
+Source: xbmc-rbp-autostart
+Section: video
+Priority: extra
+Maintainer: Dan Gardner <dan+rpi@chaotica.org.uk>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.3
+#Homepage: <insert the upstream URL, if relevant>
+#Vcs-Git: git://git.debian.org/collab-maint/xbmc-rbp-autostart.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/xbmc-rbp-autostart.git;a=summary
+
+Package: xbmc-rbp-autostart
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libcap2-bin (>= 1:2.22-1), psmisc (>= 22.19-1)
+Description: Init script and associated helpers for XBMC
+ This package provides an init script and some associated helpers to ensure
+ XMBC is run on startup and still allow the user to log in on a virtual terminal
+ if required.
