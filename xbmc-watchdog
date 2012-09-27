@@ -11,13 +11,6 @@ XBMC="/usr/lib/xbmc/xbmc.bin"
 XBMC_CMD="$XBMC --standalone -fs"
 VT_HELPER="/usr/lib/xbmc/vt-helper"
 
-MEM_TOTAL=$(awk '/^MemTotal:/{ print $2; }' </proc/meminfo)
-
-if [ "$MEM_TOTAL" -gt "131072" ]; then
-	echo "128Mb GPU split not selected, XBMC will not start (found $MEM_TOTAL bytes RAM)."
-	kill -STOP $$
-fi
-
 while true; do
     chvt $XBMC_VT
     clear >/dev/tty$XBMC_VT
