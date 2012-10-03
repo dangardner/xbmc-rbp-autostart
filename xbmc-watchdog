@@ -5,16 +5,30 @@
 # Set these variables unless they are already set in the environment
 : ${XBMC_TTY_TIMEOUT:="5"}
 : ${XBMC_USER:="pi"}
+: ${XBMC_HOME:="/home/pi"}
 : ${XBMC_VT:="3"}
 
 XBMC="/usr/lib/xbmc/xbmc.bin"
-XBMC_CMD="$XBMC --standalone -fs"
 VT_HELPER="/usr/lib/xbmc/vt-helper"
+FSPROTECT="/fsprotect/system"
+
+# special case for fsprotect since aufs doesn't handle file caps
+if [ -f "$FSPROTECT/$XBMC" ]; then
+    XBMC=$FSPROTECT/$XBMC
+    mount -o remount,rw $FSPROTECT
+    setcap cap_net_admin,cap_net_bind_service,cap_net_raw+ep $XBMC
+    mount -o remount,ro $FSPROTECT
+else
+    setcap cap_net_admin,cap_net_bind_service,cap_net_raw+ep $XBMC
+fi
+
+XBMC_CMD="$XBMC --standalone -fs"
 
 while true; do
     chvt $XBMC_VT
     clear >/dev/tty$XBMC_VT
-    setcap cap_net_admin,cap_net_bind_service,cap_net_raw=ep $XBMC
+    setterm -powerdown 0 -blank 0 >/dev/tty1
+    setterm -cursor off -powerdown 0 -blank 0 >/dev/tty3
     su - $XBMC_USER -c "$XBMC_CMD >/dev/null 2>&1"
     case "$?" in
         0) # user quit. Wait for $XBMC_TTY_TIMEOUT grace period so user can login into console tty
@@ -23,31 +37,33 @@ while true; do
                 8) # user pressed escape. now switching to 1st terminal
                     chvt 1
                     sleep 55
-		    # loop while user is logged in on at least one virtual terminal
+                    # loop while user is logged in on at least one virtual terminal
                     while true; do
                         login_check=$(who | awk '{print $2}' | grep ^tty[0-9])
                         if [ -z "$login_check" ]; then
                             break
                         fi
                         sleep 5
-                    done ;;
+                    done
+                    ;;
                 9|*) # no user input. resume xbmc
-                    sleep 2;;
+                    sleep 2
+                    ;;
             esac
-            ;; 
+            ;;
         64) # shutdown system.
             /sbin/poweroff
-	    exit
-	    ;;
+            exit
+            ;;
         65) # warm Restart xbmc
             sleep 2
-	    ;;
+            ;;
         66) # Reboot System
             /sbin/reboot
-	    exit
-	    ;;
+            exit
+            ;;
         *)  # this should not happen
             sleep 30
-	    ;;
+            ;;
     esac
 done
